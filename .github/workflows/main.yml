@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  buildx:
+  Docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,23 +27,50 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Docker meta
-        id: meta
+      - name: Docker meta (Docker Hub)
+        id: meta-public
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            mareksuchanek/test-docker-ci
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      
+      - name: Build and push (Docker Hub)
+        uses: docker/build-push-action@v2
+        if: steps.meta-public.outputs.tags != '[]'
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-public.outputs.tags }}
+          labels: ${{ steps.meta-public.outputs.labels }}
+
+      - name: Login to Private Repository
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          # repository... but just testing for now
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker meta (Private Repository)
+        id: meta-private
         uses: docker/metadata-action@v3
         with:
           images: |
             mareksuchanek/test-docker-ci
           tags: |
             type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
       
-      - name: Build and push
+      - name: Build and push (Private Repository)
         uses: docker/build-push-action@v2
+        if: steps.meta-private.outputs.tags != '[]'
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: false  # testing purposes
+          tags: ${{ steps.meta-private.outputs.tags }}
+          labels: ${{ steps.meta-private.outputs.labels }}
