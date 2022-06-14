@@ -29,7 +29,7 @@ jobs:
 
       - name: Docker meta (Docker Hub)
         id: meta-public
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: |
             mareksuchanek/test-docker-ci
@@ -58,7 +58,7 @@ jobs:
 
       - name: Docker meta (Private Repository)
         id: meta-private
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: |
             mareksuchanek/test-docker-ci
